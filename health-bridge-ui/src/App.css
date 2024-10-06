@@ -3,6 +3,7 @@
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  width: 100%;
 }
 
 .logo {
@@ -60,7 +61,10 @@
   border-radius: 8px;
 }
 
-
+.side-menu .nav-item.active {
+  background-color:cornflowerblue;
+  color:white
+}
 
 .app-body {
   height: 100vh;
