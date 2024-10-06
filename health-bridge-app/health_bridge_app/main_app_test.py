@@ -3,7 +3,8 @@ import os
 # from fastapi.testclient import TestClient
 
 
-API_BASE_URL = 'http://127.0.0.1:8000'
+# API_BASE_URL = 'http://127.0.0.1:8000'
+API_BASE_URL = 'http://44.203.65.128'
 
 
 def test_hw_api():
