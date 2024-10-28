@@ -1,2 +1,3 @@
 # databricks_hackathon
-databricks hackathon
+
+Intelligent Defense: Real-Time Fraud Detection with GenAI and Databricks
