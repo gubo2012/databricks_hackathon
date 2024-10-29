@@ -166,6 +166,57 @@ fraud_final_df.to_csv("/Workspace/Users/jz3477@att.com/fraud_analysis_final.csv"
 
 # COMMAND ----------
 
+import pandas as pd
+fraud_final_df = pd.read_csv("/Workspace/Users/jz3477@att.com/fraud_analysis_final.csv")
+
+# COMMAND ----------
+
+from datetime import datetime
+
+# Assign the current time to the 'update_time' column
+fraud_final_df['update_time'] = datetime.now()
+fraud_final_df = fraud_final_df.rename({'caller_id': 'call_id'}, axis=1)
+
+# COMMAND ----------
+
+fraud_final_df
+
+# COMMAND ----------
+
+from pyspark.sql.types import StructType, StructField, FloatType, StringType, TimestampType
+
+# Adjust the schema to match the data types in the pandas DataFrame
+# schema = StructType([
+#     StructField("fraud_probability", FloatType(), True),
+#     StructField("call_id", StringType(), True),  # Adjusted to StringType
+#     StructField("fraud_pattern", StringType(), True),  # Adjusted to StringType
+#     StructField("Explanation", StringType(), True),  # Adjusted to StringType
+#     StructField("Summary", StringType(), True),  # Adjusted to StringType
+#     StructField("update_time", TimestampType(), True),
+#     # Add other fields here as needed
+# ])
+
+# Ensure the data types in the pandas DataFrame match the schema
+fraud_final_df['call_id'] = fraud_final_df['call_id'].astype(str)
+fraud_final_df['update_time'] = pd.to_datetime(fraud_final_df['update_time'])
+
+# Create a Spark DataFrame from the pandas DataFrame
+fraud_final_sparkdf = spark.createDataFrame(fraud_final_df)
+
+# Write the Spark DataFrame to a table
+fraud_final_sparkdf.write.mode("overwrite").saveAsTable("workspace.llm.fraud_analysis_summary")
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from workspace.llm.fraud_analysis_summary limit 10;
+
+# COMMAND ----------
+
+fraud_final_df.dtypes
+
+# COMMAND ----------
+
 import json
 import json_repair
 
