@@ -11,10 +11,10 @@ import os
 host = "https://" + spark.conf.get("spark.databricks.workspaceUrl")
 os.environ['DATABRICKS_TOKEN'] = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
 
-index_name="workspace.default.vs_index"
+index_name="workspace.llm.fraud_docs_index"
 host = "https://" + spark.conf.get("spark.databricks.workspaceUrl")
 
-VECTOR_SEARCH_ENDPOINT_NAME="hackathon_vs_endpoint"
+VECTOR_SEARCH_ENDPOINT_NAME="vector_search_endpoint"
 
 # COMMAND ----------
 
@@ -51,7 +51,7 @@ from langchain_community.chat_models import ChatDatabricks
 
 chat_model = ChatDatabricks(endpoint="databricks-dbrx-instruct", max_tokens = 200)
 
-TEMPLATE = """You are an fraud investigator. You are identifying if a conversation between CCR(agent) and FC(customer) are fraudulent. Provide all answers only in English.
+TEMPLATE = """You are an fraud investigator. You are identifying if a conversation between CCR(agent) and FC(customer) are fraudulent. Provide the answer and the probability score of being fraud.
 Use the following pieces of context to answer the question at the end:
 {context}
 Question: {question}
@@ -145,7 +145,7 @@ from databricks.sdk.service.serving import EndpointCoreConfigInput, ServedModelI
 
 serving_endpoint_name = "fraud_app_rag_endpoint"
 # latest_model_version = get_latest_model_version(model_name)
-latest_model_version = '1'
+latest_model_version = '2'
 
 w = WorkspaceClient()
 endpoint_config = EndpointCoreConfigInput(
@@ -162,7 +162,6 @@ endpoint_config = EndpointCoreConfigInput(
         )
     ]
 )
-
 
 existing_endpoint = next(
     (e for e in w.serving_endpoints.list() if e.name == serving_endpoint_name), None

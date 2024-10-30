@@ -227,7 +227,7 @@ fraud_docs.write.mode('overwrite').saveAsTable("frauds_documentation")
 from databricks.vector_search.client import VectorSearchClient
 vsc = VectorSearchClient()
 
-VECTOR_SEARCH_ENDPOINT_NAME = 'test1'
+VECTOR_SEARCH_ENDPOINT_NAME = 'vector_search_endpoint'
 
 if VECTOR_SEARCH_ENDPOINT_NAME not in [e['name'] for e in vsc.list_endpoints()['endpoints']]:
     vsc.create_endpoint(name = VECTOR_SEARCH_ENDPOINT_NAME, endpoint_type="STANDARD")
@@ -236,7 +236,7 @@ print(f"Endpoint named {VECTOR_SEARCH_ENDPOINT_NAME} is ready.")
 
 # COMMAND ----------
 
-existing_indexes = vsc.list_indexes('test1')
+existing_indexes = vsc.list_indexes(VECTOR_SEARCH_ENDPOINT_NAME)
 existing_indexes
 
 # # Check if 'workspace.default.fraud_documentation_index' is in the list of existing indexes
@@ -248,7 +248,7 @@ existing_indexes
 
 # COMMAND ----------
 
-vsc.delete_index('test1', 'workspace.default.fraud_docs')
+# vsc.delete_index('test1', 'workspace.default.fraud_docs')
 
 # COMMAND ----------
 
@@ -256,11 +256,11 @@ from databricks.sdk import WorkspaceClient
 import databricks.sdk.service.catalog as c
 
 catalog = 'workspace'
-db = 'default'
+db = 'llm'
 #The table we'd like to index
 source_table_fullname = f"{catalog}.{db}.frauds_documentation"
 # Where we want to store our index
-vs_index_fullname = f"{catalog}.{db}.frauds_documentation_index"
+vs_index_fullname = f"{catalog}.{db}.fraud_docs_index"
 
 
 print(f"Creating index {vs_index_fullname} on endpoint {VECTOR_SEARCH_ENDPOINT_NAME}...")
@@ -280,7 +280,6 @@ print(f"index {vs_index_fullname} on table {source_table_fullname} is ready")
 # COMMAND ----------
 
 index_info = vsc.get_index(VECTOR_SEARCH_ENDPOINT_NAME, vs_index_fullname)
-index_info
 
 # COMMAND ----------
 
