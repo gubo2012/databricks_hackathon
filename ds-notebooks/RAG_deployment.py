@@ -55,7 +55,7 @@ TEMPLATE = """You are an fraud investigator. You are identifying if a conversati
 Use the following pieces of context to answer the question at the end:
 {context}
 Question: {question}
-Answer:
+Answer: The output is json format. Keys are 'fraud probability score' and 'explanation'.
 """
 prompt = PromptTemplate(template=TEMPLATE, input_variables=["context", "question"])
 
@@ -143,9 +143,9 @@ from databricks.sdk.service.serving import EndpointCoreConfigInput, ServedModelI
 # from databricks.sdk.service.serving import EndpointCoreConfigInput, ServedEntityInput
 
 
-serving_endpoint_name = "fraud_app_rag_endpoint"
+serving_endpoint_name = "fraud_app_rag_endpoint_dev"
 # latest_model_version = get_latest_model_version(model_name)
-latest_model_version = '2'
+latest_model_version = '3'
 
 w = WorkspaceClient()
 endpoint_config = EndpointCoreConfigInput(
@@ -177,13 +177,59 @@ else:
 
 import requests
 import json
-local_endpoint = 'https://dbc-15e7860d-511f.cloud.databricks.com/serving-endpoints/fraud_app_rag_endpoint/invocations'
+local_endpoint = 'https://dbc-15e7860d-511f.cloud.databricks.com/serving-endpoints/fraud_app_rag_endpoint_dev/invocations'
 headers = {
     "Authorization":  f"Bearer {os.environ['DATABRICKS_TOKEN']}",
     "Content-Type": "application/json"
 }
+
+question = {"query": conversation}
+
 payload = {
     "inputs": [{"query": question}]
 }
 response = requests.post(local_endpoint, headers=headers, data=json.dumps(payload))
 print(response.json())
+
+# COMMAND ----------
+
+response_json = response.json()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC test
+
+# COMMAND ----------
+
+def is_fraudulent(transcription):
+    local_endpoint = 'https://dbc-15e7860d-511f.cloud.databricks.com/serving-endpoints/fraud_app_rag_endpoint_dev/invocations'
+    headers = {
+        "Authorization": f"Bearer {os.environ['DATABRICKS_TOKEN']}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "inputs": [{"query": transcription}]
+    }
+
+    response = requests.post(local_endpoint, headers=headers, data=json.dumps(payload))
+    print(response.json())
+    # Assuming response is an HTTP response object you've received
+    response_json = response.json()  # This already gives you a Python dictionary
+    data = response_json['predictions'][0]  # Directly access the data
+    data_dict = json.loads(data)
+
+    # print(data_dict)
+    # print(data['fraud probability score'])
+    return {
+        "is_fraudulent": data_dict['fraud probability score'],
+        "explanation": data_dict['explanation']
+    }
+
+# COMMAND ----------
+
+is_fraudulent(conversation)
+
+# COMMAND ----------
+
+
