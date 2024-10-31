@@ -1,18 +1,21 @@
 import streamlit as st
 import numpy as np
 from sklearn.ensemble import IsolationForest
+from sklearn.feature_extraction.text import TfidfVectorizer
 import smtplib
 from email.mime.text import MIMEText
 from openai import OpenAI
 import pandas as pd
 import os
 import time
-
+import requests
+import json
 import util
 
 db_hostname = "dbc-15e7860d-511f.cloud.databricks.com"
 http_path = "/sql/1.0/warehouses/55aa3d052fd78c53"
-token = os.environ.get("DATABRICKS_TOKEN")
+token = os.environ.get("OPENAI_API_KEY")
+
 
 client = OpenAI(
   api_key=token,
@@ -20,29 +23,51 @@ client = OpenAI(
 )
 
 # Function to simulate streaming data
-def simulate_streaming_data_gpt(client, num_call=1):
-    data = [util.generate_fake_call(client) for _ in range(num_call)]
+def simulate_streaming_data_gpt(client):
+    data = util.generate_fake_call(client)
     return data
 
 
 # Fraud detection function
 def is_fraudulent(transcription):
-    fraudulent_keywords = ["free", "win", "prize", "urgent"]
-    return any(keyword in transcription.lower() for keyword in fraudulent_keywords)
+    local_endpoint = 'https://dbc-15e7860d-511f.cloud.databricks.com/serving-endpoints/fraud_app_rag_endpoint_dev/invocations'
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "inputs": [{"query": transcription}]
+    }
 
- 
+    response = requests.post(local_endpoint, headers=headers, data=json.dumps(payload))
+    print(response.json())
+    response_json = response.json()
+    data = response_json['predictions'][0]  # Directly access the data
+    data_dict = json.loads(data)
+
+    # print(data_dict)
+    # print(data['fraud probability score'])
+    return data_dict['fraud probability score'], data_dict['explanation']
+
 def detect_anomalies(data):
+    if isinstance(data, str):
+        data = [data]
+
+    vectorizer = TfidfVectorizer()
+    X = vectorizer.fit_transform(data)
+
     model = IsolationForest(contamination=0.1)
-    model.fit(data)
-    predictions = model.predict(data)
-    anomalies = data[predictions == -1]
-    return anomalies
+    model.fit(X.toarray())
+              
+    scores = model.decision_function(X.toarray())
+    anomalies = model.predict(X.toarray())
+    return scores, anomalies
 
 # Function to send email alert
 def send_email_alert(anomalies):
     # Email configuration
-    sender_email = "kf3527@att.com"
-    receiver_email = "kf3527@att.com"
+    sender_email = ""
+    receiver_email = ""
     subject = "Fraud Alert!"
     body = f"Anomalies detected: {anomalies}"
 
@@ -64,35 +89,33 @@ def show_real_time_detection():
     st.write("This feature detects anomalies in real-time interactions, which could indicate potential fraud.")
 
     # Placeholder for the DataFrame
-    data_placeholder = st.empty()
     # Simulate and display streaming data
-    for _ in range(3):
-        new_data = simulate_streaming_data_gpt(client, 1)
-        df = pd.DataFrame(new_data).reset_index(drop=True).rename(columns={0: "transcription"})
-        
+    for _ in range(10):
+        data_placeholder = st.empty()
+        new_data = util.generate_fake_call(client)
+    
+        st.write(new_data)
         # Perform fraud
-        df["is_fraudulent"] = df["transcription"].apply(is_fraudulent)
-        #df["fradulent_highlight"] = df["is_fraudulent"].apply(lambda x: "background: red" if x else '')
+        fradulent_probability_score, explaination = is_fraudulent(new_data)
 
-        styled_df = df.style.apply(lambda x: df["fradulent_highlight"], axis=1)
+        #Detect anomalies
+        anomaly_scores, anomalies = detect_anomalies(new_data)
+        is_anomaly = anomalies[0] == -1
 
-        #st.table(styled_df)
 
-        # Update the DataFrame in the Streamlit app
-        data_placeholder.dataframe(df)
-        #st.dataframe(df)
+        # Highlight fraudulent interactions
+        #df["fradulent_highlight"] = df.apply(lambda x: "background-color: red" if x["fradulent_probability_score"] > 0.5 or x["is_anomaly"] else "", axis=1)
+        #styled_df = df.style.apply(lambda x: df["fradulent_highlight"], axis=1)
+
         # Wait for a few seconds before generating the next batch
-        time.sleep(30)
-        # Convert input to a list of integers
-        #data = np.array([int(x) for x in interaction_logs.split(",")]).reshape(-1, 1)
-        # Detect anomalies
-        #anomalies = detect_anomalies(data)
  
-        #if len(anomalies) > 0:
-        #    st.error("Fraud Alert! Anomalies detected.")
-        #    st.write("Anomalous Data Points:")
-        #    st.write(anomalies)
+        if is_anomaly or fradulent_probability_score > 0.5:
+            st.error("Fraud Alert! Anomalies detected.")
+            st.write("Anomalous Data Points:")
+            st.write(explaination)
             # Send email alert
-            #send_email_alert(anomalies)
-        #else:
-        #    st.success("No anomalies detected.")
+            #send_email_alert(df[df["is_anomaly"] | df["is_fraudulent"]].to_dict())
+        else:
+            st.success("No anomalies detected.")
+        st.markdown("-----")
+        time.sleep(5)
