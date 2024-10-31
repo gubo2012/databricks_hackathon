@@ -23,6 +23,42 @@ Intelligent Defense: Real-Time Fraud Detection with GenAI and Databricks
   - Analyze the sentiment of calls for both customers and agents to detect anomalies indicating fraudulent behavior. Sentiment scores and trends provide early warnings of potential fraud.
   ### User Feedback Mechanism:
   - Develop a user review portal for thorough call reviews and detailed feedback. Comment Section: Leave specific comments and suggestions for agents and the CSR team.
+
+## List of Databricks tools used
+
+• Workspace
+  1. git integration
+
+• Catalog
+  1. Load data
+  2. Register RAG index and model 
+
+• SQL
+  1. Create Schema and tables for data organization
+
+• Pyspark
+  1. Perform data cleaning operations
+  2. operate data ETL (Extract, Transform, Load)
+
+• Databricks LLM Model: databricks-meta-llm-3-1-70b-instruct
+  1. Data Synthesis: Generate synthetic data as needed
+  2. Summarization: Summarize large volumes of text data
+  3. Sentiment Analysis: Analyze the sentiment of text data to understand emotional tone
+  4. Pattern recognization: Identify the fraud pattern from the transcript
+ 
+• MLflow
+  1. Register pipelines for model management and tracking
+
+• Serving
+  1. Create a serving endpoint for Retrieval-Augmented Generation (RAG) to deploy the model and make it accessible for real-time inference
+ 
+• App
+  1. Streamlit
+
+## Presentation
+    https://dbc-15e7860d-511f.cloud.databricks.com/editor/files/1108890155243782?o=2333727827300183
+
+
 ## Conclusion
   This project aims to build an advanced fraud detection and prevention system that identifies and mitigates fraudulent activities in real-time and provides valuable insights and feedback to improve overall customer service. By harnessing advanced technologies and user engagement, the app will offer a robust solution to safeguard call interactions and enhance organizational efficiency.
 
