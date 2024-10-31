@@ -52,8 +52,8 @@ Intelligent Defense: Real-Time Fraud Detection with GenAI and Databricks
 • Serving
   1. Create a serving endpoint for Retrieval-Augmented Generation (RAG) to deploy the model and make it accessible for real-time inference
  
-• App
-  1. Streamlit
+• Databricks Apps
+  1. Streamlit framework
 
 ## Presentation
     https://dbc-15e7860d-511f.cloud.databricks.com/editor/files/1108890155243782?o=2333727827300183
