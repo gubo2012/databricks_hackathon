@@ -15,8 +15,7 @@ import os
 # Database connection parameters
 db_hostname = "dbc-15e7860d-511f.cloud.databricks.com"
 http_path = "/sql/1.0/warehouses/55aa3d052fd78c53"
-token =""
-os.environ["DATABRICKS_TOKEN"] = token
+token = os.getenv("DATABRICKS_TOKEN")
 
 
 def show_dashboard():
@@ -104,17 +103,15 @@ def show_dashboard():
         with col1:
             st.plotly_chart(fig)
         
-        # Recent Alerts and Notifications
-        data = {
-        'alert_id': range(1, 101),
-        'timestamp': pd.date_range(start='2024-01-01', periods=100, freq='D'),
-        'fraud_type': np.random.choice(['Phishing', 'Identity Theft', 'Account Takeover'], size=100),
-        }
-        dummy = pd.DataFrame(data)
+        columns = ["call_id", "fraud_pattern"]
+        df_pattern = util.get_data_from_table("llm.fraud_analysis_summary", columns, db_hostname, http_path, token)
+        df_pattern['fraud_type'] = df_pattern['fraud_pattern'].str.split('/').str[0]
+        agg_pattern = df_pattern.groupby(['fraud_type']).agg({'call_id': 'count'}).reset_index()
+        top_10_df = agg_pattern.sort_values('call_id', ascending=False).head(5)
 
         with col2:
             # Pie Chart: Distribution of fraud alerts by region
-            pie_chart_fig = px.pie(dummy, names='fraud_type', title='Fraud Alerts by Type')
+            pie_chart_fig = px.pie(top_10_df, names='fraud_type', values='call_id', title='Top 5 Fraud Type')
             pie_chart_fig.update_layout(
                 legend =dict(
                     orientation="h",
