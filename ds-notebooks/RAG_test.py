@@ -1,4 +1,9 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC This example is to test RAG serving endpoint.
+
+# COMMAND ----------
+
 conversation = """ CCR: you for calling [Company Name]. My name is [Representative Name]. How can I assist you today?
 FC: Hi, I need to change the SIM card on my phone. I lost my phone and I need a new SIM activated.
 CCR: I'm sorry to hear that you lost your phone. I'd be happy to assist you with that. For security purposes, can you please verify your account information? I'll need your full name, address, and the last four digits of your Social Security number.
@@ -44,13 +49,51 @@ import os
 host = "https://" + spark.conf.get("spark.databricks.workspaceUrl")
 os.environ['DATABRICKS_TOKEN'] = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
 
-local_endpoint = 'https://dbc-15e7860d-511f.cloud.databricks.com/serving-endpoints/fraud_app_rag_endpoint/invocations'
+local_endpoint = 'https://dbc-15e7860d-511f.cloud.databricks.com/serving-endpoints/fraud_app_rag_endpoint_dev/invocations'
 headers = {
     "Authorization":  f"Bearer {os.environ['DATABRICKS_TOKEN']}",
     "Content-Type": "application/json"
 }
+
 payload = {
     "inputs": [{"query": question}]
 }
 response = requests.post(local_endpoint, headers=headers, data=json.dumps(payload))
-print(response.json())
+response_json = response.json()
+print(response_json)
+
+# COMMAND ----------
+
+# DBTITLE 1,unit test
+def is_fraudulent(transcription, url):
+    local_endpoint = url
+    headers = {
+        "Authorization": f"Bearer {os.environ['DATABRICKS_TOKEN']}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "inputs": [{"query": transcription}]
+    }
+
+    response = requests.post(local_endpoint, headers=headers, data=json.dumps(payload))
+    # print(response.json())
+    # Assuming response is an HTTP response object you've received
+    response_json = response.json()  # This already gives you a Python dictionary
+    data = response_json['predictions'][0]  # Directly access the data
+    data_dict = json.loads(data)
+
+    # print(data_dict)
+    # print(data['fraud probability score'])
+    return {
+        "is_fraudulent": data_dict['fraud probability score'],
+        "explanation": data_dict['explanation']
+    }
+
+# COMMAND ----------
+
+serving_endpoint = 'https://dbc-15e7860d-511f.cloud.databricks.com/serving-endpoints/fraud_app_rag_endpoint_dev/invocations'
+is_fraudulent(transcription=conversation, url=serving_endpoint)
+
+# COMMAND ----------
+
+

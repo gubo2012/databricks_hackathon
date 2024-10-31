@@ -13,6 +13,17 @@
 # COMMAND ----------
 
 # MAGIC %sql
+# MAGIC CREATE TABLE IF NOT EXISTS frauds_documentation (
+# MAGIC   call_id STRING,
+# MAGIC   agent_notes STRING,
+# MAGIC   fraud_tactics STRING,
+# MAGIC   content STRING,
+# MAGIC   embedding ARRAY <FLOAT>
+# MAGIC ) TBLPROPERTIES (delta.enableChangeDataFeed = true); 
+
+# COMMAND ----------
+
+# MAGIC %sql
 # MAGIC CREATE TABLE llm.call_logs as select call_id, transcription from llm.synthetic_call_data where label = 1
 
 # COMMAND ----------

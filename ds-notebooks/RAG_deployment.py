@@ -70,6 +70,7 @@ chain = RetrievalQA.from_chain_type(
 
 # COMMAND ----------
 
+# DBTITLE 1,conversation example
 conversation = """ CCR: you for calling [Company Name]. My name is [Representative Name]. How can I assist you today?
 FC: Hi, I need to change the SIM card on my phone. I lost my phone and I need a new SIM activated.
 CCR: I'm sorry to hear that you lost your phone. I'd be happy to assist you with that. For security purposes, can you please verify your account information? I'll need your full name, address, and the last four digits of your Social Security number.
@@ -137,6 +138,7 @@ with mlflow.start_run(run_name="rag_run") as run:
 
 # COMMAND ----------
 
+# DBTITLE 1,create serving endpoint for registered model
 # Create or update serving endpoint
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.serving import EndpointCoreConfigInput, ServedModelInput, ServedModelInputWorkloadSize
@@ -172,63 +174,6 @@ if existing_endpoint is None:
 else:
     print(f"Updating the endpoint {serving_endpoint_name} to version {latest_model_version}, this will take a few minutes to package and deploy the endpoint...")
     w.serving_endpoints.update_config_and_wait(served_models=endpoint_config.served_models, name=serving_endpoint_name)
-
-# COMMAND ----------
-
-import requests
-import json
-local_endpoint = 'https://dbc-15e7860d-511f.cloud.databricks.com/serving-endpoints/fraud_app_rag_endpoint_dev/invocations'
-headers = {
-    "Authorization":  f"Bearer {os.environ['DATABRICKS_TOKEN']}",
-    "Content-Type": "application/json"
-}
-
-question = {"query": conversation}
-
-payload = {
-    "inputs": [{"query": question}]
-}
-response = requests.post(local_endpoint, headers=headers, data=json.dumps(payload))
-print(response.json())
-
-# COMMAND ----------
-
-response_json = response.json()
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC test
-
-# COMMAND ----------
-
-def is_fraudulent(transcription):
-    local_endpoint = 'https://dbc-15e7860d-511f.cloud.databricks.com/serving-endpoints/fraud_app_rag_endpoint_dev/invocations'
-    headers = {
-        "Authorization": f"Bearer {os.environ['DATABRICKS_TOKEN']}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "inputs": [{"query": transcription}]
-    }
-
-    response = requests.post(local_endpoint, headers=headers, data=json.dumps(payload))
-    print(response.json())
-    # Assuming response is an HTTP response object you've received
-    response_json = response.json()  # This already gives you a Python dictionary
-    data = response_json['predictions'][0]  # Directly access the data
-    data_dict = json.loads(data)
-
-    # print(data_dict)
-    # print(data['fraud probability score'])
-    return {
-        "is_fraudulent": data_dict['fraud probability score'],
-        "explanation": data_dict['explanation']
-    }
-
-# COMMAND ----------
-
-is_fraudulent(conversation)
 
 # COMMAND ----------
 
