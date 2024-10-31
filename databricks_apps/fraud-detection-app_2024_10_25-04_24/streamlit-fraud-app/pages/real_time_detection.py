@@ -10,11 +10,12 @@ import os
 import time
 import requests
 import json
+import json_repair
 import util
 
 db_hostname = "dbc-15e7860d-511f.cloud.databricks.com"
 http_path = "/sql/1.0/warehouses/55aa3d052fd78c53"
-token = os.environ.get("OPENAI_API_KEY")
+token = os.getenv("DATABRICKS_TOKEN")
 
 
 client = OpenAI(
@@ -90,32 +91,43 @@ def show_real_time_detection():
 
     # Placeholder for the DataFrame
     # Simulate and display streaming data
-    for _ in range(10):
+    for _ in range(3):
         data_placeholder = st.empty()
         new_data = util.generate_fake_call(client)
-    
+ 
         st.write(new_data)
         # Perform fraud
         fradulent_probability_score, explaination = is_fraudulent(new_data)
+        summary = util.generate_summary(new_data, client)
+        json_start = summary.find('{')
+        json_end = summary.rfind('}') + 1
+        json_str = summary[json_start:json_end]
+        result_data = json_repair.loads(json_str)
+  
+        # Extracting the keywords using regular expressions
+        fraud_probability = result_data['fraud_probability']
+        fraud_pattern = result_data['fraud_pattern']
+        explanation = result_data['Explanation']
+        summary_txt = result_data['Summary']
 
         #Detect anomalies
         anomaly_scores, anomalies = detect_anomalies(new_data)
         is_anomaly = anomalies[0] == -1
 
 
-        # Highlight fraudulent interactions
-        #df["fradulent_highlight"] = df.apply(lambda x: "background-color: red" if x["fradulent_probability_score"] > 0.5 or x["is_anomaly"] else "", axis=1)
-        #styled_df = df.style.apply(lambda x: df["fradulent_highlight"], axis=1)
+        # Display the results
+        combined_weighted_score = (fradulent_probability_score * 0.4) + (fraud_probability * 0.4) + (anomaly_scores[0] * 0.2)
 
-        # Wait for a few seconds before generating the next batch
- 
-        if is_anomaly or fradulent_probability_score > 0.5:
+        if combined_weighted_score > 0.5:
             st.error("Fraud Alert! Anomalies detected.")
             st.write("Anomalous Data Points:")
-            st.write(explaination)
+            st.write(summary_txt)
+            st.write(fraud_pattern)
             # Send email alert
-            #send_email_alert(df[df["is_anomaly"] | df["is_fraudulent"]].to_dict())
+            #send_email_alert(new_data[i])
         else:
             st.success("No anomalies detected.")
         st.markdown("-----")
+
+        # Wait for a few seconds before generating the next batch
         time.sleep(5)
